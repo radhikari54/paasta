@@ -12,16 +12,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import itertools
 import sys
 
-from paasta_tools.marathon_tools import get_marathon_clients
-from paasta_tools.marathon_tools import get_marathon_servers
+from paasta_tools import marathon_tools
 from paasta_tools.mesos.exceptions import MasterNotAvailableException
 from paasta_tools.mesos_tools import get_mesos_master
 from paasta_tools.metrics.metastatus_lib import assert_framework_count
-from paasta_tools.metrics.metastatus_lib import get_marathon_framework_ids
+from paasta_tools.paasta_metastatus import verify_marathon_clients_and_return_framework_ids
 from paasta_tools.utils import load_system_paasta_config
 from paasta_tools.utils import paasta_print
+
+
+def get_marathon_clients():
+    system_paasta_config = load_system_paasta_config()
+    marathon_servers = marathon_tools.get_marathon_servers(system_paasta_config)
+    marathon_clients = marathon_tools.get_marathon_clients(marathon_servers)
+    return [c for c in itertools.chain(
+        marathon_clients.current,
+        marathon_clients.previous,
+    )]
 
 
 def check_mesos_no_duplicate_frameworks():
@@ -32,10 +42,8 @@ def check_mesos_no_duplicate_frameworks():
         paasta_print("CRITICAL: %s" % e.message)
         sys.exit(2)
 
-    system_paasta_config = load_system_paasta_config()
-    marathon_servers = get_marathon_servers(system_paasta_config)
-    marathon_clients = get_marathon_clients(marathon_servers)
-    marathon_framework_ids = get_marathon_framework_ids(marathon_clients)
+    marathon_clients = get_marathon_clients()
+    marathon_framework_ids = verify_marathon_clients_and_return_framework_ids(marathon_clients)
     result = assert_framework_count(
         state=state,
         marathon_framework_ids=marathon_framework_ids,

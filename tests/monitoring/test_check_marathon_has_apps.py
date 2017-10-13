@@ -30,15 +30,14 @@ def test_check_chronos_jobs_no_config(capfd):
 
 
 def test_chronos_jobs_no_jobs(capfd):
+    l = mock.MagicMock()
+    l.list_apps.return_value = []
     with mock.patch(
         # We expect this is tested properly elsewhere
-        'paasta_tools.monitoring.check_marathon_has_apps.get_marathon_client', autospec=True,
-    ) as mock_get_marathon_config, mock.patch(
-        'paasta_tools.monitoring.check_marathon_has_apps.load_marathon_config', autospec=True,
+        'paasta_tools.monitoring.check_marathon_has_apps.get_marathon_clients',
+        autospec=True,
+        return_value=[l],
     ):
-        l = mock.MagicMock()
-        l.list_apps = lambda: []
-        mock_get_marathon_config.return_value = l
         with pytest.raises(SystemExit) as error:
             check_marathon_apps()
         out, err = capfd.readouterr()
@@ -47,15 +46,14 @@ def test_chronos_jobs_no_jobs(capfd):
 
 
 def test_chronos_jobs_some_jobs(capfd):
+    l = mock.MagicMock()
+    l.list_apps.return_value = ['foo', 'bar']
     with mock.patch(
         # We expect this is tested properly elsewhere
-        'paasta_tools.monitoring.check_marathon_has_apps.get_marathon_client', autospec=True,
-    ) as mock_get_marathon_config, mock.patch(
-        'paasta_tools.monitoring.check_marathon_has_apps.load_marathon_config', autospec=True,
+        'paasta_tools.monitoring.check_marathon_has_apps.get_marathon_clients',
+        autospec=True,
+        return_value=[l],
     ):
-        l = mock.MagicMock()
-        l.list_apps = lambda: ['foo', 'bar']
-        mock_get_marathon_config.return_value = l
         with pytest.raises(SystemExit) as error:
             check_marathon_apps()
         out, err = capfd.readouterr()
